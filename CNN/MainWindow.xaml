@@ -1,0 +1,276 @@
+﻿<Window x:Class="CNN.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:layers="clr-namespace:CNN.Convolution.Layers"
+        xmlns:functions="clr-namespace:CNN.Convolution.Layers.Functions"
+        xmlns:colors="clr-namespace:CNN.DataProcessing"
+        xmlns:core="clr-namespace:System;assembly=mscorlib"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="Сверточная сеть" Height="690" Width="1050">
+
+    <Window.Resources>
+        <ObjectDataProvider x:Key="LayerType" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="layers:LayerType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="PaddingType" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="functions:PaddingType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="ActivationType" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="functions:ActivationType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="PoolingType" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="functions:PoolingType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="ColorModel" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="colors:ColorModel"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+
+        <ObjectDataProvider x:Key="CnnArchitecture" MethodName="GetValues" ObjectType="{x:Type core:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="colors:CnnArchitecture"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.72*"/>
+            <ColumnDefinition Width="0.28*"/>
+        </Grid.ColumnDefinitions>
+
+        <DataGrid
+                x:Name="LayersGrid" 
+                AutoGenerateColumns="False"
+                HorizontalGridLinesBrush="DarkGray" 
+                RowBackground="LightGray" 
+                AlternatingRowBackground="White"
+                HorizontalAlignment="Stretch"
+                CanUserAddRows="True"
+                KeyUp="LayersGrid_KeyUp"
+                CanUserSortColumns="False"
+                VerticalScrollBarVisibility="Visible">
+            <DataGrid.Columns>
+                <DataGridComboBoxColumn Header="Тип" SelectedItemBinding="{Binding Path=LayerType}" ItemsSource="{Binding Source={StaticResource LayerType}}"/>
+                <DataGridTextColumn Header="Высота ядра" Binding="{Binding Path=KernelHeight}"/>
+                <DataGridTextColumn Header="Ширина ядра" Binding="{Binding Path=KernelWidth}"/>
+                <DataGridTextColumn Header="Глубина входа" Binding="{Binding Path=FilterDepth}"/>
+                <DataGridTextColumn Header="Глубина выхода" Binding="{Binding Path=FilterCount}"/>
+                <DataGridComboBoxColumn Header="Пулинг (subsamp)" SelectedItemBinding="{Binding Path=PoolingType}" ItemsSource="{Binding Source={StaticResource PoolingType}}"/>
+                <DataGridComboBoxColumn Header="Активация (conv)" SelectedItemBinding="{Binding Path=ActivationType}" ItemsSource="{Binding Source={StaticResource ActivationType}}"/>
+
+                <DataGridTextColumn Header="Страйды (conv)" Binding="{Binding Path=Strides}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Grid.Column="1" Margin="8">
+            <GroupBox >
+                <GroupBox.Header>
+                    <Label FontSize="12" Content="Архитектуры:"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Label 
+                        Content="Архитектура:"
+                        FontSize="12"/>
+                        <ComboBox x:Name="ArchitectureComboBox" SelectedIndex="0" ItemsSource="{Binding Source={StaticResource CnnArchitecture}}" />
+                    </StackPanel>
+                    <Button Margin="0,10,0,0" Click = "LoadArchitectureButton_Click" Content="Загрузить архитектуру"></Button>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox>
+                <GroupBox.Header>
+                    <Label FontSize="12" Content="Параметры:"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <Label 
+                        Content="Размеры входного изображения: "
+                        FontSize="12"/>
+                    <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                        <Label 
+                            Content="Ширина: "
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="WidthTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="224"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                        <Label 
+                            Content="Высота: "
+                            Margin="20,0,0,0"
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="HeightTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="224"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                        <Button Margin="10,0,0,0" Click = "UpdateButton_Click" Content="Обновить" Height="25" Width="68"></Button>
+                    </StackPanel>
+                    <Button Margin="0,10,0,0" Click = "RebuildButton_Click" Content="Пересобрать"></Button>
+                    <Button Margin="0,10,0,0" Click = "SaveButton_Click" Content="Сохранить"></Button>
+                    <Button Margin="0,10,0,0" Click = "LoadButton_Click" Content="Загрузить"></Button>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox >
+                <GroupBox.Header>
+                    <Label FontSize="12" Content="Обучение:"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <CheckBox 
+                        x:Name="Teached"
+                        IsEnabled="False" 
+                        IsChecked="False" 
+                        Content="Нейронная сеть обучена" />
+                    
+                    <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                        <Label 
+                            Content="Число эпох: "
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="ErasTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="1"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                        <Label 
+                            Content="Скорость: "
+                            Margin="20,0,0,0"
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="RateTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="0,0005"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                    </StackPanel>
+                    <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                        <Label 
+                            Content="Импульс: "
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="PulseTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="0,9"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                        <Label 
+                            Content="Момент: "
+                            Margin="20,0,5,0"
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="MomentumTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="0,999"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label 
+                            Content="Размер мини-пакета: "
+                            Margin="0,0,0,0"
+                            FontSize="12"/>
+                        <TextBox 
+                            x:Name="BatchSizeTextBox"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Text="10"
+                            FontSize="12"
+                            PreviewTextInput="TextBox_PreviewTextInput"/>
+                    </StackPanel>
+                    <Label
+                        Content="Путь к обучающей выборке: "
+                        FontSize="12"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox 
+                            HorizontalAlignment="Stretch"
+                            x:Name="TeachPathTextBox"
+                            VerticalAlignment="Center"
+                            Text="C:\Users\Qwerheh\Documents\src\ann\CNN\dataset\train"
+                            Width="189"
+                        FontSize="12"/>
+                        <Button 
+                            x:Name="OpenTeachDirectoryButton" 
+                            Background="White" 
+                            Width="19" 
+                            Margin="10,0,0,0"
+                            Click="OpenTeachDirectoryButton_Click">
+                            <Image 
+                                x:Name="Icon1"
+                                Source="C:\Users\Qwerheh\Documents\src\ann\CNN\resources\icons\icon.jpg"/>
+                        </Button>
+                    </StackPanel>
+                    <Button Margin="0,8,0,0" Click = "TeachButton_Click" Content="Обучить"></Button>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Margin="0,10,0,0">
+                <GroupBox.Header>
+                    <Label FontSize="12" Content="Колоризация:"/>
+                </GroupBox.Header>
+                <StackPanel>
+                    <Label
+                        Content="Путь к файлу изображения: "
+                        FontSize="12"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox 
+                            Width="189"
+                            HorizontalAlignment="Stretch"
+                            x:Name="ImagePathTextBox"
+                            VerticalAlignment="Center"
+                            Text="C:\Users\Qwerheh\Documents\src\ann\CNN\dataset\train\0qADtP.jpg"
+                            FontSize="12"/>
+                        <Button 
+                            x:Name="OpenImageButton" 
+                            Background="White" 
+                            Width="19" 
+                            Margin="10,0,0,0"
+                            Click="OpenImageButton_Click">
+                            <Image 
+                                x:Name="Icon2"
+                                Source="C:\Users\Qwerheh\Documents\src\ann\CNN\resources\icons\icon.jpg"/>
+                        </Button>
+                    </StackPanel>
+                    <Button Margin="0,8,0,0" Click = "ColorizeButton_Click" Content="Обработать"></Button>
+                </StackPanel>
+            </GroupBox>
+            <StackPanel Orientation="Horizontal">
+                <Label
+                    x:Name="Status"
+                    Content="Готово"
+                    FontSize="12"/>
+                <ProgressBar 
+                    x:Name="ProgressBar" 
+                    Margin="5,0,0,0"
+                    Minimum="0" 
+                    Maximum="100" 
+                    Width="180"
+                    HorizontalAlignment="Stretch"
+                    Height="15"
+                    Value="0"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
